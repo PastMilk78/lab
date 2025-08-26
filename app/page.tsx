@@ -507,6 +507,7 @@ export default function LabManagement() {
   const [isLoadingLabs, setIsLoadingLabs] = useState(false)
   const [isLoadingClients, setIsLoadingClients] = useState(false)
   const [isLoadingChat, setIsLoadingChat] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   // Cargar datos desde la API al iniciar
   useEffect(() => {
@@ -529,6 +530,40 @@ export default function LabManagement() {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [authState.currentUser])
+
+  // Sincronización en tiempo real del chat
+  useEffect(() => {
+    if (!authState.isAuthenticated || !selectedChannel) return
+
+    const syncInterval = setInterval(async () => {
+      setIsSyncing(true)
+      try {
+        // Sincronizar mensajes del canal actual
+        const messagesResponse = await chatApi.getMessages(selectedChannel)
+        if (messagesResponse.success && messagesResponse.data) {
+          setChatMessages(messagesResponse.data)
+        }
+
+        // Sincronizar usuarios online
+        const usersResponse = await chatApi.getUsers()
+        if (usersResponse.success && usersResponse.data) {
+          setChatUsers(usersResponse.data)
+        }
+
+        // Sincronizar canales
+        const channelsResponse = await chatApi.getChannels()
+        if (channelsResponse.success && channelsResponse.data) {
+          setChatChannels(channelsResponse.data)
+        }
+      } catch (error) {
+        console.error('Error sincronizando chat:', error)
+      } finally {
+        setIsSyncing(false)
+      }
+    }, 2000) // Sincronizar cada 2 segundos
+
+    return () => clearInterval(syncInterval)
+  }, [authState.isAuthenticated, selectedChannel])
 
   const loadLaboratories = async () => {
     setIsLoadingLabs(true)
@@ -791,6 +826,21 @@ export default function LabManagement() {
   const sendMessage = async () => {
     if (!newMessage.trim() || !authState.currentUser) return
 
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      channelId: activeChannel,
+      userId: authState.currentUser.id,
+      userName: authState.currentUser.name,
+      userRole: authState.currentUser.role,
+      content: newMessage.trim(),
+      timestamp: new Date().toISOString(),
+      type: "message" as const,
+    }
+
+    // Agregar mensaje inmediatamente al estado local
+    setChatMessages((prev) => [...prev, tempMessage])
+    setNewMessage("")
+
     try {
       const response = await chatApi.sendMessage({
         channelId: activeChannel,
@@ -802,12 +852,18 @@ export default function LabManagement() {
       })
 
       if (response.success && response.data) {
-        setChatMessages((prev) => [...prev, response.data])
-        setNewMessage("")
+        // Reemplazar mensaje temporal con el real del servidor
+        setChatMessages((prev) => 
+          prev.map(msg => 
+            msg.id === tempMessage.id ? response.data : msg
+          )
+        )
         logActivity("send_message", `Envió mensaje en canal ${activeChannel}`, "communication", activeChannel)
       }
     } catch (error) {
       console.error('Error enviando mensaje:', error)
+      // Remover mensaje temporal si falló
+      setChatMessages((prev) => prev.filter(msg => msg.id !== tempMessage.id))
       alert('Error al enviar el mensaje')
     }
   }
@@ -1328,9 +1384,17 @@ export default function LabManagement() {
                 {/* Área de chat */}
                 <div className="lg:col-span-3 bg-card border border-border rounded-lg flex flex-col">
                   <div className="p-4 border-b border-border">
-                    <h3 className="font-serif font-semibold text-card-foreground">
-                      # {chatChannels.find((c) => c.id === activeChannel)?.name}
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-serif font-semibold text-card-foreground">
+                        # {chatChannels.find((c) => c.id === activeChannel)?.name}
+                      </h3>
+                      {isSyncing && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          Sincronizando...
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex-1 p-4 overflow-y-auto space-y-3">
