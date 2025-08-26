@@ -542,18 +542,21 @@ export default function LabManagement() {
         const messagesResponse = await chatApi.getMessages(selectedChannel)
         if (messagesResponse.success && messagesResponse.data) {
           setChatMessages(messagesResponse.data)
+          localStorage.setItem('chat_messages', JSON.stringify(messagesResponse.data))
         }
 
         // Sincronizar usuarios online
         const usersResponse = await chatApi.getUsers()
         if (usersResponse.success && usersResponse.data) {
           setChatUsers(usersResponse.data)
+          localStorage.setItem('chat_users', JSON.stringify(usersResponse.data))
         }
 
         // Sincronizar canales
         const channelsResponse = await chatApi.getChannels()
         if (channelsResponse.success && channelsResponse.data) {
           setChatChannels(channelsResponse.data)
+          localStorage.setItem('chat_channels', JSON.stringify(channelsResponse.data))
         }
       } catch (error) {
         console.error('Error sincronizando chat:', error)
@@ -598,6 +601,24 @@ export default function LabManagement() {
   const loadChatData = async () => {
     setIsLoadingChat(true)
     try {
+      // Intentar cargar desde cache local primero
+      const cachedChannels = localStorage.getItem('chat_channels')
+      const cachedUsers = localStorage.getItem('chat_users')
+      const cachedMessages = localStorage.getItem('chat_messages')
+
+      if (cachedChannels && cachedUsers) {
+        try {
+          setChatChannels(JSON.parse(cachedChannels))
+          setChatUsers(JSON.parse(cachedUsers))
+          if (cachedMessages) {
+            setChatMessages(JSON.parse(cachedMessages))
+          }
+        } catch (e) {
+          console.log('Cache corrupto, cargando desde servidor...')
+        }
+      }
+
+      // Cargar datos frescos del servidor
       const [channelsResponse, usersResponse] = await Promise.all([
         chatApi.getChannels(),
         chatApi.getUsers()
@@ -605,10 +626,12 @@ export default function LabManagement() {
 
       if (channelsResponse.success && channelsResponse.data) {
         setChatChannels(channelsResponse.data)
+        localStorage.setItem('chat_channels', JSON.stringify(channelsResponse.data))
       }
 
       if (usersResponse.success && usersResponse.data) {
         setChatUsers(usersResponse.data)
+        localStorage.setItem('chat_users', JSON.stringify(usersResponse.data))
       }
 
       // Cargar mensajes del canal actual
@@ -616,6 +639,7 @@ export default function LabManagement() {
         const messagesResponse = await chatApi.getMessages(selectedChannel)
         if (messagesResponse.success && messagesResponse.data) {
           setChatMessages(messagesResponse.data)
+          localStorage.setItem('chat_messages', JSON.stringify(messagesResponse.data))
         }
       }
     } catch (error) {
@@ -634,10 +658,18 @@ export default function LabManagement() {
       const usersResponse = await chatApi.getUsers()
       if (usersResponse.success && usersResponse.data) {
         setChatUsers(usersResponse.data)
+        localStorage.setItem('chat_users', JSON.stringify(usersResponse.data))
       }
     } catch (error) {
       console.error('Error actualizando estado de usuario:', error)
     }
+  }
+
+  const clearChatCache = () => {
+    localStorage.removeItem('chat_channels')
+    localStorage.removeItem('chat_users')
+    localStorage.removeItem('chat_messages')
+    console.log('🧹 Cache del chat limpiado')
   }
 
   const logActivity = (
@@ -1328,14 +1360,25 @@ export default function LabManagement() {
                 <div className="lg:col-span-1 bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-serif font-semibold text-card-foreground">Canales</h3>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowCreateChannel(true)}
-                      className="border-primary/20 text-primary hover:bg-primary/10"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={clearChatCache}
+                        className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                        title="Limpiar cache del chat"
+                      >
+                        🧹
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowCreateChannel(true)}
+                        className="border-primary/20 text-primary hover:bg-primary/10"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

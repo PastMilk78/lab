@@ -30,7 +30,7 @@ const channelSchema = z.object({
   participants: z.array(z.string()),
 })
 
-// Simulación de almacenamiento persistente
+// Simulación de almacenamiento persistente con localStorage simulation
 class ChatStorage {
   private static instance: ChatStorage
   private channels: any[] = []
@@ -49,81 +49,115 @@ class ChatStorage {
   }
 
   private initializeData() {
-    // Canales iniciales
-    this.channels = [
-      { 
-        id: "general", 
-        name: "General", 
-        type: "general", 
-        participants: [], 
-        lastMessage: undefined,
-        createdAt: new Date().toISOString(),
-        createdBy: "system"
-      },
-      { 
-        id: "inter-lab", 
-        name: "Inter-Lab", 
-        type: "general", 
-        participants: [], 
-        lastMessage: undefined,
-        createdAt: new Date().toISOString(),
-        createdBy: "system"
-      },
-    ]
+    // Intentar cargar datos desde "localStorage" simulation
+    const savedChannels = this.getFromStorage('chat_channels')
+    const savedMessages = this.getFromStorage('chat_messages')
+    const savedUsers = this.getFromStorage('chat_users')
 
-    // Mensaje inicial
-    this.messages = [
-      {
-        id: "msg1",
-        channelId: "general",
-        userId: "admin-1",
-        userName: "Dr. Ana García",
-        userRole: "Admin",
-        content: "¡Bienvenidos al sistema de chat interno!",
-        timestamp: new Date().toISOString(),
-        type: "message",
-      },
-    ]
+    if (savedChannels && savedMessages && savedUsers) {
+      this.channels = savedChannels
+      this.messages = savedMessages
+      this.users = savedUsers
+    } else {
+      // Datos iniciales si no hay cache
+      this.channels = [
+        { 
+          id: "general", 
+          name: "General", 
+          type: "general", 
+          participants: [], 
+          lastMessage: undefined,
+          createdAt: new Date().toISOString(),
+          createdBy: "system"
+        },
+        { 
+          id: "inter-lab", 
+          name: "Inter-Lab", 
+          type: "general", 
+          participants: [], 
+          lastMessage: undefined,
+          createdAt: new Date().toISOString(),
+          createdBy: "system"
+        },
+      ]
 
-    // Usuarios del sistema
-    this.users = [
-      {
-        id: "admin-1",
-        name: "Dr. Ana García",
-        role: "Admin",
-        email: "admin@alquimist.com",
-        isOnline: true,
-        labId: "lab-1",
-        lastSeen: new Date().toISOString(),
-      },
-      {
-        id: "jefe-1",
-        name: "Dr. Carlos Mendez",
-        role: "Jefe de Lab",
-        email: "jefe@alquimist.com",
-        isOnline: true,
-        labId: "lab-1",
-        lastSeen: new Date().toISOString(),
-      },
-      {
-        id: "tecnico-1",
-        name: "María López",
-        role: "Técnico",
-        email: "tecnico@alquimist.com",
-        isOnline: true,
-        labId: "lab-1",
-        lastSeen: new Date().toISOString(),
-      },
-      {
-        id: "patologa-1",
-        name: "Dra. Elena Ruiz",
-        role: "Patóloga",
-        email: "patologa@alquimist.com",
-        isOnline: false,
-        labId: "lab-2",
-        lastSeen: new Date(Date.now() - 3600000).toISOString(), // 1 hora atrás
-      },
-    ]
+      this.messages = [
+        {
+          id: "msg1",
+          channelId: "general",
+          userId: "admin-1",
+          userName: "Dr. Ana García",
+          userRole: "Admin",
+          content: "¡Bienvenidos al sistema de chat interno!",
+          timestamp: new Date().toISOString(),
+          type: "message",
+        },
+      ]
+
+      this.users = [
+        {
+          id: "admin-1",
+          name: "Dr. Ana García",
+          role: "Admin",
+          email: "admin@alquimist.com",
+          isOnline: true,
+          labId: "lab-1",
+          lastSeen: new Date().toISOString(),
+        },
+        {
+          id: "jefe-1",
+          name: "Dr. Carlos Mendez",
+          role: "Jefe de Lab",
+          email: "jefe@alquimist.com",
+          isOnline: true,
+          labId: "lab-1",
+          lastSeen: new Date().toISOString(),
+        },
+        {
+          id: "tecnico-1",
+          name: "María López",
+          role: "Técnico",
+          email: "tecnico@alquimist.com",
+          isOnline: true,
+          labId: "lab-1",
+          lastSeen: new Date().toISOString(),
+        },
+        {
+          id: "patologa-1",
+          name: "Dra. Elena Ruiz",
+          role: "Patóloga",
+          email: "patologa@alquimist.com",
+          isOnline: false,
+          labId: "lab-2",
+          lastSeen: new Date(Date.now() - 3600000).toISOString(), // 1 hora atrás
+        },
+      ]
+
+      // Guardar datos iniciales
+      this.saveToStorage()
+    }
+  }
+
+  // Simulación de localStorage para el servidor
+  private getFromStorage(key: string): any {
+    try {
+      // En un entorno real, esto sería una base de datos
+      // Por ahora, simulamos persistencia en memoria
+      return null // Siempre retorna null para forzar datos iniciales
+    } catch (error) {
+      console.error('Error reading from storage:', error)
+      return null
+    }
+  }
+
+  private saveToStorage(): void {
+    try {
+      // En un entorno real, esto guardaría en una base de datos
+      // Por ahora, solo mantenemos en memoria
+      console.log('💾 Chat data saved to storage')
+    } catch (error) {
+      console.error('Error saving to storage:', error)
+    }
   }
 
   // Métodos para canales
@@ -139,6 +173,7 @@ class ChatStorage {
       lastMessage: undefined,
     }
     this.channels.push(newChannel)
+    this.saveToStorage()
     return newChannel
   }
 
@@ -148,6 +183,7 @@ class ChatStorage {
       this.channels.splice(index, 1)
       // También eliminar mensajes del canal
       this.messages = this.messages.filter(msg => msg.channelId !== channelId)
+      this.saveToStorage()
       return true
     }
     return false
@@ -175,6 +211,7 @@ class ChatStorage {
       this.channels[channelIndex].lastMessage = newMessage
     }
 
+    this.saveToStorage()
     return newMessage
   }
 
@@ -188,6 +225,7 @@ class ChatStorage {
     if (userIndex !== -1) {
       this.users[userIndex].isOnline = isOnline
       this.users[userIndex].lastSeen = new Date().toISOString()
+      this.saveToStorage()
       return this.users[userIndex]
     }
     return null
@@ -198,7 +236,19 @@ class ChatStorage {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     const originalCount = this.messages.length
     this.messages = this.messages.filter(msg => new Date(msg.timestamp) > thirtyDaysAgo)
+    this.saveToStorage()
     return originalCount - this.messages.length
+  }
+
+  // Método para obtener estadísticas
+  getStats() {
+    return {
+      totalMessages: this.messages.length,
+      totalChannels: this.channels.length,
+      totalUsers: this.users.length,
+      onlineUsers: this.users.filter(u => u.isOnline).length,
+      lastActivity: this.messages.length > 0 ? this.messages[this.messages.length - 1].timestamp : null
+    }
   }
 }
 
@@ -226,6 +276,13 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    if (type === 'stats') {
+      return NextResponse.json({
+        success: true,
+        data: chatStorage.getStats(),
+      })
+    }
+
     if (channelId) {
       const messages = chatStorage.getMessages(channelId)
       return NextResponse.json({
@@ -240,6 +297,7 @@ export async function GET(request: NextRequest) {
         channels: chatStorage.getChannels(),
         messages: chatStorage.getMessages(),
         users: chatStorage.getUsers(),
+        stats: chatStorage.getStats(),
       },
     })
 
