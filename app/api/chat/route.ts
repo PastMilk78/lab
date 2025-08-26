@@ -30,104 +30,180 @@ const channelSchema = z.object({
   participants: z.array(z.string()),
 })
 
-// Datos iniciales (en producción esto estaría en una base de datos)
-let chatChannels = [
-  { 
-    id: "general", 
-    name: "General", 
-    type: "general" as const, 
-    participants: [], 
-    lastMessage: undefined 
-  },
-  { 
-    id: "inter-lab", 
-    name: "Inter-Lab", 
-    type: "general" as const, 
-    participants: [], 
-    lastMessage: undefined 
-  },
-]
+// Simulación de almacenamiento persistente
+class ChatStorage {
+  private static instance: ChatStorage
+  private channels: any[] = []
+  private messages: any[] = []
+  private users: any[] = []
 
-let chatMessages = [
-  {
-    id: "msg1",
-    channelId: "general",
-    userId: "admin-1",
-    userName: "Dr. Ana García",
-    userRole: "Admin",
-    content: "¡Bienvenidos al sistema de chat interno!",
-    timestamp: new Date().toISOString(),
-    type: "message" as const,
-  },
-]
+  constructor() {
+    this.initializeData()
+  }
 
-let chatUsers = [
-  {
-    id: "admin-1",
-    name: "Dr. Ana García",
-    role: "Admin",
-    email: "admin@alquimist.com",
-    password: "admin123",
-    permissions: [
-      "manage_labs",
-      "manage_users", 
-      "view_all",
-      "assign_tests",
-      "manage_inventory",
-      "delete_labs",
-      "delete_machines",
-      "manage_permissions",
-      "view_activities",
-      "system_admin",
-    ],
-    isOnline: true,
-    labId: "lab-1",
-  },
-  {
-    id: "jefe-1",
-    name: "Dr. Carlos Mendez",
-    role: "Jefe de Lab",
-    email: "jefe@alquimist.com",
-    password: "jefe123",
-    permissions: [
-      "manage_labs",
-      "view_all", 
-      "assign_tests",
-      "manage_inventory",
-      "view_activities"
-    ],
-    isOnline: true,
-    labId: "lab-1",
-  },
-  {
-    id: "tecnico-1",
-    name: "María López",
-    role: "Técnico",
-    email: "tecnico@alquimist.com",
-    password: "tecnico123",
-    permissions: [
-      "view_assigned",
-      "update_tests",
-      "view_inventory"
-    ],
-    isOnline: true,
-    labId: "lab-1",
-  },
-  {
-    id: "patologa-1",
-    name: "Dra. Elena Ruiz",
-    role: "Patóloga",
-    email: "patologa@alquimist.com",
-    password: "patologa123",
-    permissions: [
-      "view_results",
-      "approve_tests",
-      "view_all"
-    ],
-    isOnline: false,
-    labId: "lab-2",
-  },
-]
+  static getInstance(): ChatStorage {
+    if (!ChatStorage.instance) {
+      ChatStorage.instance = new ChatStorage()
+    }
+    return ChatStorage.instance
+  }
+
+  private initializeData() {
+    // Canales iniciales
+    this.channels = [
+      { 
+        id: "general", 
+        name: "General", 
+        type: "general", 
+        participants: [], 
+        lastMessage: undefined,
+        createdAt: new Date().toISOString(),
+        createdBy: "system"
+      },
+      { 
+        id: "inter-lab", 
+        name: "Inter-Lab", 
+        type: "general", 
+        participants: [], 
+        lastMessage: undefined,
+        createdAt: new Date().toISOString(),
+        createdBy: "system"
+      },
+    ]
+
+    // Mensaje inicial
+    this.messages = [
+      {
+        id: "msg1",
+        channelId: "general",
+        userId: "admin-1",
+        userName: "Dr. Ana García",
+        userRole: "Admin",
+        content: "¡Bienvenidos al sistema de chat interno!",
+        timestamp: new Date().toISOString(),
+        type: "message",
+      },
+    ]
+
+    // Usuarios del sistema
+    this.users = [
+      {
+        id: "admin-1",
+        name: "Dr. Ana García",
+        role: "Admin",
+        email: "admin@alquimist.com",
+        isOnline: true,
+        labId: "lab-1",
+        lastSeen: new Date().toISOString(),
+      },
+      {
+        id: "jefe-1",
+        name: "Dr. Carlos Mendez",
+        role: "Jefe de Lab",
+        email: "jefe@alquimist.com",
+        isOnline: true,
+        labId: "lab-1",
+        lastSeen: new Date().toISOString(),
+      },
+      {
+        id: "tecnico-1",
+        name: "María López",
+        role: "Técnico",
+        email: "tecnico@alquimist.com",
+        isOnline: true,
+        labId: "lab-1",
+        lastSeen: new Date().toISOString(),
+      },
+      {
+        id: "patologa-1",
+        name: "Dra. Elena Ruiz",
+        role: "Patóloga",
+        email: "patologa@alquimist.com",
+        isOnline: false,
+        labId: "lab-2",
+        lastSeen: new Date(Date.now() - 3600000).toISOString(), // 1 hora atrás
+      },
+    ]
+  }
+
+  // Métodos para canales
+  getChannels() {
+    return this.channels
+  }
+
+  addChannel(channel: any) {
+    const newChannel = {
+      ...channel,
+      id: channel.id || `channel-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      lastMessage: undefined,
+    }
+    this.channels.push(newChannel)
+    return newChannel
+  }
+
+  deleteChannel(channelId: string) {
+    const index = this.channels.findIndex(ch => ch.id === channelId)
+    if (index !== -1) {
+      this.channels.splice(index, 1)
+      // También eliminar mensajes del canal
+      this.messages = this.messages.filter(msg => msg.channelId !== channelId)
+      return true
+    }
+    return false
+  }
+
+  // Métodos para mensajes
+  getMessages(channelId?: string) {
+    if (channelId) {
+      return this.messages.filter(msg => msg.channelId === channelId)
+    }
+    return this.messages
+  }
+
+  addMessage(message: any) {
+    const newMessage = {
+      ...message,
+      id: message.id || `msg-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    }
+    this.messages.push(newMessage)
+
+    // Actualizar último mensaje del canal
+    const channelIndex = this.channels.findIndex(ch => ch.id === message.channelId)
+    if (channelIndex !== -1) {
+      this.channels[channelIndex].lastMessage = newMessage
+    }
+
+    return newMessage
+  }
+
+  // Métodos para usuarios
+  getUsers() {
+    return this.users
+  }
+
+  updateUserStatus(userId: string, isOnline: boolean) {
+    const userIndex = this.users.findIndex(u => u.id === userId)
+    if (userIndex !== -1) {
+      this.users[userIndex].isOnline = isOnline
+      this.users[userIndex].lastSeen = new Date().toISOString()
+      return this.users[userIndex]
+    }
+    return null
+  }
+
+  // Limpiar mensajes antiguos (más de 30 días)
+  cleanupOldMessages() {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const originalCount = this.messages.length
+    this.messages = this.messages.filter(msg => new Date(msg.timestamp) > thirtyDaysAgo)
+    return originalCount - this.messages.length
+  }
+}
+
+// Instancia global del almacenamiento
+const chatStorage = ChatStorage.getInstance()
 
 // GET - Obtener canales y mensajes
 export async function GET(request: NextRequest) {
@@ -139,19 +215,19 @@ export async function GET(request: NextRequest) {
     if (type === 'channels') {
       return NextResponse.json({
         success: true,
-        data: chatChannels,
+        data: chatStorage.getChannels(),
       })
     }
 
     if (type === 'users') {
       return NextResponse.json({
         success: true,
-        data: chatUsers,
+        data: chatStorage.getUsers(),
       })
     }
 
     if (channelId) {
-      const messages = chatMessages.filter(msg => msg.channelId === channelId)
+      const messages = chatStorage.getMessages(channelId)
       return NextResponse.json({
         success: true,
         data: messages,
@@ -161,9 +237,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        channels: chatChannels,
-        messages: chatMessages,
-        users: chatUsers,
+        channels: chatStorage.getChannels(),
+        messages: chatStorage.getMessages(),
+        users: chatStorage.getUsers(),
       },
     })
 
@@ -181,19 +257,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = messageSchema.parse(body)
 
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      ...validatedData,
-      timestamp: new Date().toISOString(),
-    }
-
-    chatMessages.push(newMessage)
-
-    // Actualizar último mensaje del canal
-    const channelIndex = chatChannels.findIndex(ch => ch.id === validatedData.channelId)
-    if (channelIndex !== -1) {
-      chatChannels[channelIndex].lastMessage = newMessage
-    }
+    const newMessage = chatStorage.addMessage(validatedData)
 
     return NextResponse.json({
       success: true,
@@ -216,25 +280,45 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - Crear canal
+// PUT - Crear canal o actualizar estado de usuario
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = channelSchema.parse(body)
+    const { action, ...data } = body
 
-    const newChannel = {
-      id: `channel-${Date.now()}`,
-      ...validatedData,
-      lastMessage: undefined,
+    if (action === 'create_channel') {
+      const validatedData = channelSchema.parse(data)
+      const newChannel = chatStorage.addChannel(validatedData)
+
+      return NextResponse.json({
+        success: true,
+        data: newChannel,
+        message: 'Canal creado exitosamente',
+      }, { status: 201 })
     }
 
-    chatChannels.push(newChannel)
+    if (action === 'update_user_status') {
+      const { userId, isOnline } = data
+      const updatedUser = chatStorage.updateUserStatus(userId, isOnline)
 
-    return NextResponse.json({
-      success: true,
-      data: newChannel,
-      message: 'Canal creado exitosamente',
-    }, { status: 201 })
+      if (updatedUser) {
+        return NextResponse.json({
+          success: true,
+          data: updatedUser,
+          message: 'Estado de usuario actualizado',
+        })
+      } else {
+        return NextResponse.json(
+          { error: 'Usuario no encontrado' },
+          { status: 404 }
+        )
+      }
+    }
+
+    return NextResponse.json(
+      { error: 'Acción no válida' },
+      { status: 400 }
+    )
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -245,50 +329,55 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Error al crear canal' },
+      { error: 'Error en la operación' },
       { status: 500 }
     )
   }
 }
 
-// DELETE - Eliminar canal
+// DELETE - Eliminar canal o limpiar mensajes
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const channelId = searchParams.get('channelId')
+    const action = searchParams.get('action')
 
-    if (!channelId) {
-      return NextResponse.json(
-        { error: 'ID de canal requerido' },
-        { status: 400 }
-      )
+    if (action === 'cleanup_messages') {
+      const deletedCount = chatStorage.cleanupOldMessages()
+      return NextResponse.json({
+        success: true,
+        message: `Se eliminaron ${deletedCount} mensajes antiguos`,
+        deletedCount,
+      })
     }
 
-    // No permitir eliminar canales del sistema
-    if (channelId === 'general' || channelId === 'inter-lab') {
-      return NextResponse.json(
-        { error: 'No se puede eliminar un canal del sistema' },
-        { status: 403 }
-      )
+    if (channelId) {
+      // No permitir eliminar canales del sistema
+      if (channelId === 'general' || channelId === 'inter-lab') {
+        return NextResponse.json(
+          { error: 'No se puede eliminar un canal del sistema' },
+          { status: 403 }
+        )
+      }
+
+      const deleted = chatStorage.deleteChannel(channelId)
+      if (deleted) {
+        return NextResponse.json({
+          success: true,
+          message: 'Canal eliminado exitosamente',
+        })
+      } else {
+        return NextResponse.json(
+          { error: 'Canal no encontrado' },
+          { status: 404 }
+        )
+      }
     }
 
-    const channelIndex = chatChannels.findIndex(ch => ch.id === channelId)
-    if (channelIndex === -1) {
-      return NextResponse.json(
-        { error: 'Canal no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    chatChannels.splice(channelIndex, 1)
-
-    // Eliminar mensajes del canal
-    chatMessages = chatMessages.filter(msg => msg.channelId !== channelId)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Canal eliminado exitosamente',
-    })
+    return NextResponse.json(
+      { error: 'Parámetros requeridos' },
+      { status: 400 }
+    )
 
   } catch (error) {
     return NextResponse.json(

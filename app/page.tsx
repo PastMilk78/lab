@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { AlertTriangle, Loader2 } from "lucide-react"
 import { ActivityIcon, ChevronDown, ChevronRight, Edit, LogOut, Moon, Plus, Sun, Trash2, Users, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { authApi, activitiesApi, laboratoriesApi, clientsApi, ApiError } from "@/lib/api"
+import { authApi, activitiesApi, laboratoriesApi, clientsApi, chatApi, ApiError } from "@/lib/api"
 
 interface Parameter {
   id: string
@@ -498,6 +498,7 @@ export default function LabManagement() {
       type: "message",
     },
   ])
+  const [selectedChannel, setSelectedChannel] = useState<string>("general")
   const [activeChannel, setActiveChannel] = useState("general")
   const [newMessage, setNewMessage] = useState("")
   const [newChannelName, setNewChannelName] = useState("")
@@ -505,14 +506,29 @@ export default function LabManagement() {
   const [technicianAssignments, setTechnicianAssignments] = useState<TechnicianAssignment[]>([])
   const [isLoadingLabs, setIsLoadingLabs] = useState(false)
   const [isLoadingClients, setIsLoadingClients] = useState(false)
+  const [isLoadingChat, setIsLoadingChat] = useState(false)
 
   // Cargar datos desde la API al iniciar
   useEffect(() => {
     if (authState.isAuthenticated) {
       loadLaboratories()
       loadClients()
+      loadChatData()
+      updateUserOnlineStatus(true)
     }
   }, [authState.isAuthenticated])
+
+  // Actualizar estado offline al salir
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (authState.currentUser) {
+        updateUserOnlineStatus(false)
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [authState.currentUser])
 
   const loadLaboratories = async () => {
     setIsLoadingLabs(true)
@@ -541,6 +557,51 @@ export default function LabManagement() {
       // Mantener datos locales como fallback
     } finally {
       setIsLoadingClients(false)
+    }
+  }
+
+  const loadChatData = async () => {
+    setIsLoadingChat(true)
+    try {
+      const [channelsResponse, usersResponse] = await Promise.all([
+        chatApi.getChannels(),
+        chatApi.getUsers()
+      ])
+
+      if (channelsResponse.success && channelsResponse.data) {
+        setChatChannels(channelsResponse.data)
+      }
+
+      if (usersResponse.success && usersResponse.data) {
+        setChatUsers(usersResponse.data)
+      }
+
+      // Cargar mensajes del canal actual
+      if (selectedChannel) {
+        const messagesResponse = await chatApi.getMessages(selectedChannel)
+        if (messagesResponse.success && messagesResponse.data) {
+          setChatMessages(messagesResponse.data)
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando datos del chat:', error)
+    } finally {
+      setIsLoadingChat(false)
+    }
+  }
+
+  const updateUserOnlineStatus = async (isOnline: boolean) => {
+    if (!authState.currentUser) return
+
+    try {
+      await chatApi.updateUserStatus(authState.currentUser.id, isOnline)
+      // Recargar usuarios para actualizar el estado
+      const usersResponse = await chatApi.getUsers()
+      if (usersResponse.success && usersResponse.data) {
+        setChatUsers(usersResponse.data)
+      }
+    } catch (error) {
+      console.error('Error actualizando estado de usuario:', error)
     }
   }
 
@@ -727,52 +788,80 @@ export default function LabManagement() {
     logActivity("delete_user", `Eliminó el usuario con ID ${userId}`, "lab_management", userId)
   }
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!newMessage.trim() || !authState.currentUser) return
 
-    const message: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      channelId: activeChannel,
-      userId: authState.currentUser.id,
-      userName: authState.currentUser.name,
-      userRole: authState.currentUser.role,
-      content: newMessage,
-      timestamp: new Date().toISOString(),
-      type: "message",
+    try {
+      const response = await chatApi.sendMessage({
+        channelId: activeChannel,
+        userId: authState.currentUser.id,
+        userName: authState.currentUser.name,
+        userRole: authState.currentUser.role,
+        content: newMessage.trim(),
+        type: "message",
+      })
+
+      if (response.success && response.data) {
+        setChatMessages((prev) => [...prev, response.data])
+        setNewMessage("")
+        logActivity("send_message", `Envió mensaje en canal ${activeChannel}`, "communication", activeChannel)
+      }
+    } catch (error) {
+      console.error('Error enviando mensaje:', error)
+      alert('Error al enviar el mensaje')
     }
-
-    setChatMessages((prev) => [...prev, message])
-    setNewMessage("")
-
-    logActivity("send_message", `Envió mensaje en canal ${activeChannel}`, "communication", activeChannel)
   }
 
-  const createChannel = () => {
+  const createChannel = async () => {
     if (!newChannelName.trim()) return
 
-    const channel: ChatChannel = {
-      id: `channel-${Date.now()}`,
-      name: newChannelName,
-      type: "laboratory",
-      participants: [authState.currentUser?.id || ""],
+    try {
+      const response = await chatApi.createChannel({
+        name: newChannelName,
+        type: "laboratory",
+        participants: [authState.currentUser?.id || ""],
+      })
+
+      if (response.success && response.data) {
+        setChatChannels((prev) => [...prev, response.data])
+        setNewChannelName("")
+        setShowCreateChannel(false)
+        logActivity("create_channel", `Creó el canal ${newChannelName}`, "communication", response.data.id, newChannelName)
+      }
+    } catch (error) {
+      console.error('Error creando canal:', error)
+      alert('Error al crear el canal')
     }
-
-    setChatChannels((prev) => [...prev, channel])
-    setNewChannelName("")
-    setShowCreateChannel(false)
-
-    logActivity("create_channel", `Creó el canal ${newChannelName}`, "communication", channel.id, newChannelName)
   }
 
-  const deleteChannel = (channelId: string) => {
+  const deleteChannel = async (channelId: string) => {
     if (channelId === "general" || channelId === "inter-lab") return
 
-    setChatChannels((prev) => prev.filter((c) => c.id !== channelId))
-    if (activeChannel === channelId) {
-      setActiveChannel("general")
+    try {
+      await chatApi.deleteChannel(channelId)
+      setChatChannels((prev) => prev.filter((c) => c.id !== channelId))
+      if (activeChannel === channelId) {
+        setActiveChannel("general")
+      }
+      logActivity("delete_channel", `Eliminó un canal de chat`, "communication", channelId)
+    } catch (error) {
+      console.error('Error eliminando canal:', error)
+      alert('Error al eliminar el canal')
     }
+  }
 
-    logActivity("delete_channel", `Eliminó un canal de chat`, "communication", channelId)
+  const changeChannel = async (channelId: string) => {
+    setActiveChannel(channelId)
+    setSelectedChannel(channelId)
+    
+    try {
+      const response = await chatApi.getMessages(channelId)
+      if (response.success && response.data) {
+        setChatMessages(response.data)
+      }
+    } catch (error) {
+      console.error('Error cargando mensajes del canal:', error)
+    }
   }
 
   const addClient = () => {
@@ -1200,7 +1289,7 @@ export default function LabManagement() {
                         className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
                           activeChannel === channel.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                         }`}
-                        onClick={() => setActiveChannel(channel.id)}
+                        onClick={() => changeChannel(channel.id)}
                       >
                         <span className="text-sm font-medium"># {channel.name}</span>
                         {channel.id !== "general" && channel.id !== "inter-lab" && (

@@ -203,12 +203,32 @@ export const chatApi = {
   }) => {
     return apiRequest('/chat', {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        action: 'create_channel',
+        ...data
+      }),
     })
   },
 
   deleteChannel: async (channelId: string) => {
     return apiRequest(`/chat?channelId=${channelId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  updateUserStatus: async (userId: string, isOnline: boolean) => {
+    return apiRequest('/chat', {
+      method: 'PUT',
+      body: JSON.stringify({
+        action: 'update_user_status',
+        userId,
+        isOnline
+      }),
+    })
+  },
+
+  cleanupMessages: async () => {
+    return apiRequest('/chat?action=cleanup_messages', {
       method: 'DELETE',
     })
   },
