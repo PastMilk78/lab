@@ -1,0 +1,200 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  /* Actualizando fuentes según el brief de diseño */
+  --font-serif: var(--font-work-sans); /* Work Sans para headings */
+  --font-sans: var(--font-open-sans); /* Open Sans para body text */
+  --font-mono: var(--font-roboto-mono);
+}
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Actualizando paleta de colores según el logo de ALQUIMIST */
+  --background: oklch(0.99 0.005 240); /* Fondo muy claro con tinte azul */
+  --foreground: oklch(0.15 0.02 240); /* Texto oscuro con tinte azul */
+  --card: oklch(1 0 0); /* Cards blanco puro */
+  --card-foreground: oklch(0.15 0.02 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.02 240);
+  --primary: oklch(0.45 0.15 240); /* Azul primario del logo */
+  --primary-foreground: oklch(0.98 0.01 240);
+  --secondary: oklch(0.96 0.01 240); /* Gris azulado muy claro */
+  --secondary-foreground: oklch(0.15 0.02 240);
+  --muted: oklch(0.94 0.02 240); /* Gris azulado claro */
+  --muted-foreground: oklch(0.45 0.03 240);
+  --accent: oklch(0.45 0.12 150); /* Verde del logo */
+  --accent-foreground: oklch(0.98 0.01 150);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.98 0.01 27);
+  --border: oklch(0.9 0.02 240); /* Bordes azul grisáceo */
+  --input: oklch(0.96 0.01 240);
+  --ring: oklch(0.45 0.15 240); /* Ring azul primario */
+  --chart-1: oklch(0.45 0.15 240); /* Azul primario */
+  --chart-2: oklch(0.45 0.12 150); /* Verde acento */
+  --chart-3: oklch(0.6 0.1 200); /* Azul claro */
+  --chart-4: oklch(0.4 0.08 180); /* Azul verdoso */
+  --chart-5: oklch(0.5 0.06 120); /* Verde azulado */
+  --radius: 0.75rem; /* Radio más suave */
+  --sidebar: oklch(0.98 0.01 240);
+  --sidebar-foreground: oklch(0.15 0.02 240);
+  --sidebar-primary: oklch(0.45 0.15 240);
+  --sidebar-primary-foreground: oklch(0.98 0.01 240);
+  --sidebar-accent: oklch(0.96 0.01 240);
+  --sidebar-accent-foreground: oklch(0.15 0.02 240);
+  --sidebar-border: oklch(0.9 0.02 240);
+  --sidebar-ring: oklch(0.45 0.15 240);
+}
+
+.dark {
+  /* Mejorando contraste con azules grisáceos más definidos */
+  --background: oklch(0.12 0.03 240); /* Fondo azul grisáceo más claro */
+  --foreground: oklch(0.92 0.02 240); /* Texto más brillante */
+  --card: oklch(0.18 0.04 240); /* Cards azul grisáceo más contrastado */
+  --card-foreground: oklch(0.92 0.02 240);
+  --popover: oklch(0.18 0.04 240);
+  --popover-foreground: oklch(0.92 0.02 240);
+  --primary: oklch(0.65 0.18 240); /* Azul primario más brillante */
+  --primary-foreground: oklch(0.12 0.03 240);
+  --secondary: oklch(0.22 0.04 240); /* Secundario más contrastado */
+  --secondary-foreground: oklch(0.88 0.02 240);
+  --muted: oklch(0.25 0.04 240); /* Muted más visible */
+  --muted-foreground: oklch(0.72 0.04 240); /* Texto muted más legible */
+  --accent: oklch(0.58 0.14 150); /* Verde más brillante */
+  --accent-foreground: oklch(0.12 0.03 150);
+  --destructive: oklch(0.65 0.22 27);
+  --destructive-foreground: oklch(0.92 0.02 27);
+  --border: oklch(0.28 0.04 240); /* Bordes más visibles */
+  --input: oklch(0.22 0.04 240); /* Inputs más contrastados */
+  --ring: oklch(0.65 0.18 240);
+  --chart-1: oklch(0.65 0.18 240);
+  --chart-2: oklch(0.58 0.14 150);
+  --chart-3: oklch(0.72 0.12 200);
+  --chart-4: oklch(0.55 0.1 180);
+  --chart-5: oklch(0.62 0.08 120);
+  --sidebar: oklch(0.15 0.03 240); /* Sidebar más contrastado */
+  --sidebar-foreground: oklch(0.92 0.02 240);
+  --sidebar-primary: oklch(0.65 0.18 240);
+  --sidebar-primary-foreground: oklch(0.12 0.03 240);
+  --sidebar-accent: oklch(0.22 0.04 240);
+  --sidebar-accent-foreground: oklch(0.88 0.02 240);
+  --sidebar-border: oklch(0.28 0.04 240);
+  --sidebar-ring: oklch(0.65 0.18 240);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Agregando gradiente médico profesional para el fondo */
+.medical-gradient {
+  background: linear-gradient(135deg, oklch(0.99 0.005 240) 0%, oklch(0.97 0.01 240) 50%, oklch(0.98 0.008 200) 100%);
+  min-height: 100vh;
+}
+
+/* Mejorando gradiente médico para modo oscuro con más contraste */
+.dark-medical-gradient {
+  background: linear-gradient(135deg, oklch(0.12 0.03 240) 0%, oklch(0.15 0.04 240) 50%, oklch(0.13 0.03 200) 100%);
+  min-height: 100vh;
+}
+
+/* Custom styles for touch-friendly interface */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mejoras tipográficas */
+.font-serif {
+  font-family: var(--font-work-sans), ui-serif, serif;
+}
+
+.font-sans {
+  font-family: var(--font-open-sans), ui-sans-serif, sans-serif;
+}
+
+/* Mejorando estilos para modo oscuro */
+.dark .card-shadow {
+  box-shadow: 0 2px 8px -2px oklch(0.08 0.04 240 / 0.4), 0 1px 3px -1px oklch(0.05 0.02 240 / 0.6);
+}
+
+.dark .card-shadow:hover {
+  box-shadow: 0 4px 16px -4px oklch(0.08 0.04 240 / 0.5), 0 2px 6px -2px oklch(0.05 0.02 240 / 0.7);
+}
+
+/* Agregando estilos adicionales para mejor contraste en modo oscuro */
+.dark .text-gray-600 {
+  color: oklch(0.68 0.04 240) !important;
+}
+
+.dark .text-gray-500 {
+  color: oklch(0.65 0.04 240) !important;
+}
+
+.dark .text-gray-400 {
+  color: oklch(0.62 0.04 240) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: oklch(0.2 0.04 240) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: oklch(0.22 0.04 240) !important;
+}
+
+.dark .border-gray-200 {
+  border-color: oklch(0.28 0.04 240) !important;
+}
+
+.dark .border-gray-300 {
+  border-color: oklch(0.32 0.04 240) !important;
+}
